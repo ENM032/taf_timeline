@@ -9,4 +9,6 @@ public record ErrorResponse(OffsetDateTime timestamp,
                             String message,
                             String path,
                             String requestId,
+                            String code,
+                            String type,
                             Map<String, String> details) {}
