@@ -20,13 +20,14 @@ public class Database {
         ensureParentDirectory();
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(jdbcUrl);
-        config.setMinimumIdle(1);
-        config.setMaximumPoolSize(6);
-        config.setConnectionTimeout(5000);
-        config.setIdleTimeout(300000);
-        config.setMaxLifetime(1800000);
-        config.setValidationTimeout(3000);
-        config.setLeakDetectionThreshold(20000);
+        config.setMinimumIdle(getEnvInt("DB_POOL_MIN", 1));
+        config.setMaximumPoolSize(getEnvInt("DB_POOL_MAX", 6));
+        config.setConnectionTimeout(getEnvLong("DB_CONN_TIMEOUT_MS", 5000));
+        config.setIdleTimeout(getEnvLong("DB_IDLE_TIMEOUT_MS", 300000));
+        config.setMaxLifetime(getEnvLong("DB_MAX_LIFETIME_MS", 1800000));
+        config.setValidationTimeout(getEnvLong("DB_VALIDATION_TIMEOUT_MS", 3000));
+        long leak = getEnvLong("DB_LEAK_DETECTION_MS", 20000);
+        if (leak > 0) config.setLeakDetectionThreshold(leak);
         config.setConnectionTestQuery("SELECT 1");
         config.setPoolName("timeline-pool");
         dataSource = new HikariDataSource(config);
@@ -78,5 +79,25 @@ public class Database {
 
     public void close() {
         if (dataSource != null) dataSource.close();
+    }
+
+    private int getEnvInt(String name, int def) {
+        try {
+            String v = System.getenv(name);
+            if (v == null || v.isBlank()) return def;
+            return Integer.parseInt(v.trim());
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    private long getEnvLong(String name, long def) {
+        try {
+            String v = System.getenv(name);
+            if (v == null || v.isBlank()) return def;
+            return Long.parseLong(v.trim());
+        } catch (Exception e) {
+            return def;
+        }
     }
 }
