@@ -23,9 +23,29 @@
 ## Configuration
 - Defaults:
   - Port: `8080`
-  - DB URL: `jdbc:sqlite:data/timeline.db`
-- Planned environment variable support (future work):
-  - `PORT`, `DB_URL`, `CORS_ORIGINS`, rate limiting settings
+  - DB URL: `jdbc:sqlite:var/db/timeline.db`
+- Environment variables:
+  - Server
+    - `PORT` — HTTP port
+    - `DB_URL` — JDBC URL (e.g., `jdbc:sqlite:var/db/timeline.db`)
+  - Database pool (HikariCP)
+    - `DB_POOL_MIN` — minimum idle (default 1)
+    - `DB_POOL_MAX` — max pool size (default 6)
+    - `DB_CONN_TIMEOUT_MS` — connection timeout (default 5000)
+    - `DB_IDLE_TIMEOUT_MS` — idle timeout (default 300000)
+    - `DB_MAX_LIFETIME_MS` — max lifetime (default 1800000)
+    - `DB_VALIDATION_TIMEOUT_MS` — validation timeout (default 3000)
+    - `DB_LEAK_DETECTION_MS` — leak detection threshold (default 20000; 0 to disable)
+    - `DB_BUSY_TIMEOUT_MS` — SQLite `busy_timeout` PRAGMA (default 5000)
+  - Request/response
+    - `REQUEST_MAX_BYTES` — max payload size for POST/PUT (default 2000000)
+    - `RATE_LIMIT_PER_MIN` — requests per window per IP (default 120)
+    - `RATE_LIMIT_WINDOW_MS` — window size (default 60000)
+    - `GZIP_MIN_BYTES` — minimum body size to gzip (default 1024)
+  - Validation
+    - `FACT_TITLE_MAX` — max title length (default 200)
+    - `FACT_SUMMARY_MAX` — max summary length (default 2000)
+    - `FACT_CATEGORIES` — comma-separated allowlist (default `history,science,tech,culture,current`)
 
 ## Error Handling Design
 - Centralized in `GlobalExceptionHandler`
