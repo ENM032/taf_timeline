@@ -20,7 +20,14 @@ public class Database {
         ensureParentDirectory();
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(jdbcUrl);
-        config.setMaximumPoolSize(5);
+        config.setMinimumIdle(1);
+        config.setMaximumPoolSize(6);
+        config.setConnectionTimeout(5000);
+        config.setIdleTimeout(300000);
+        config.setMaxLifetime(1800000);
+        config.setValidationTimeout(3000);
+        config.setLeakDetectionThreshold(20000);
+        config.setConnectionTestQuery("SELECT 1");
         config.setPoolName("timeline-pool");
         dataSource = new HikariDataSource(config);
         try (Connection conn = dataSource.getConnection(); Statement st = conn.createStatement()) {
