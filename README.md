@@ -1,7 +1,7 @@
 # TaF Timeline API
 
 ## Overview
-TaF Timeline is a lightweight REST API that serves curated facts for specific months and days, backed by SQLite. It’s suitable for timelines of events (current and historical), month-by-month browsing, and simple curation workflows.
+TaF Timeline is a lightweight REST API that serves curated facts for specific months and days, backed by SQLite. “TaF” stands for “That’s a Fact”, so “TaF Timeline” stands for “That’s a Fact Timeline”. It’s suitable for timelines of events (current and historical), month-by-month browsing, and simple curation workflows.
 
 ## Features
 - Facts by month and specific day

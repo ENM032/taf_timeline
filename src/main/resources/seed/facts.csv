@@ -92,3 +92,4 @@ event_date,title,summary,category,source_url
 1990-05-22,Windows 3.0 released,Microsoft releases Windows 3.0,tech,https://en.wikipedia.org/wiki/Windows_3.0
 2001-10-23,iPod introduced,Apple introduces the iPod music player,tech,https://en.wikipedia.org/wiki/IPod
 2012-08-06,Curiosity rover lands on Mars,NASA rover lands in Gale Crater on Mars,science,https://en.wikipedia.org/wiki/Curiosity_(rover)
+2025-11-17,TaF Timeline tool created,Initial release of the That's a Fact Timeline API,current,https://github.com/ENM032/taf_timeline
