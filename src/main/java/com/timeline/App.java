@@ -19,7 +19,8 @@ public class App {
     public static final int DEFAULT_PORT = 8080;
 
     public static void main(String[] args) {
-        Database database = new Database("jdbc:sqlite:var/db/timeline.db");
+        String dbUrl = com.timeline.util.EnvUtil.getEnvString("DB_URL", "jdbc:sqlite:var/db/timeline.db");
+        Database database = new Database(dbUrl);
         database.init();
         FactRepository repo = new CachingFactRepository(new SqliteFactRepository(database));
         Seeder.seedIfEmpty(repo);
@@ -41,7 +42,8 @@ public class App {
             }
         });
         app.events(event -> event.serverStopped(() -> database.close()));
-        app.start(DEFAULT_PORT);
+        int port = com.timeline.util.EnvUtil.getEnvInt("PORT", DEFAULT_PORT);
+        app.start(port);
     }
 
     public record Status(String status) {}

@@ -32,7 +32,8 @@ public class GlobalExceptionHandler {
                 String ct = ctx.header("Content-Type");
                 if (ct == null || !ct.toLowerCase().contains("application/json")) throw new io.javalin.http.UnsupportedMediaTypeResponse("Content-Type must be application/json");
                 long cl = ctx.req().getContentLengthLong();
-                if (cl > 0 && cl > 2_000_000) throw new io.javalin.http.HttpResponseException(413, "Payload Too Large");
+                long max = com.timeline.util.EnvUtil.getEnvLong("REQUEST_MAX_BYTES", 2_000_000);
+                if (cl > 0 && cl > max) throw new io.javalin.http.HttpResponseException(413, "Payload Too Large");
             }
         });
         app.after(ctx -> {
@@ -85,6 +86,8 @@ public class GlobalExceptionHandler {
     }
 
     private static class Holder {
-        static final com.timeline.rate.RateLimiter RL = new com.timeline.rate.RateLimiter(120, 60_000);
-    }
+        static final com.timeline.rate.RateLimiter RL = new com.timeline.rate.RateLimiter(
+                com.timeline.util.EnvUtil.getEnvInt("RATE_LIMIT_PER_MIN", 120),
+                com.timeline.util.EnvUtil.getEnvLong("RATE_LIMIT_WINDOW_MS", 60_000));
+        }
 }

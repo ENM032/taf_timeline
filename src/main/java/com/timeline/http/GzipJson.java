@@ -18,14 +18,15 @@ public class GzipJson {
     }
 
     public static void write(Context ctx, int status, Object body) {
-        String ae = ctx.header("Accept-Encoding");
-        boolean gzip = ae != null && ae.toLowerCase(Locale.ROOT).contains("gzip");
-        if (!gzip) {
-            ctx.status(status).json(body);
-            return;
-        }
         try {
             byte[] data = OM.writeValueAsBytes(body);
+            String ae = ctx.header("Accept-Encoding");
+            boolean gzip = ae != null && ae.toLowerCase(Locale.ROOT).contains("gzip");
+            int min = com.timeline.util.EnvUtil.getEnvInt("GZIP_MIN_BYTES", 1024);
+            if (!gzip || data.length < min) {
+                ctx.status(status).json(body);
+                return;
+            }
             ctx.header("Content-Encoding", "gzip");
             ctx.header("Vary", "Accept-Encoding");
             ctx.contentType("application/json");

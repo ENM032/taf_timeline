@@ -20,20 +20,20 @@ public class Database {
         ensureParentDirectory();
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(jdbcUrl);
-        config.setMinimumIdle(getEnvInt("DB_POOL_MIN", 1));
-        config.setMaximumPoolSize(getEnvInt("DB_POOL_MAX", 6));
-        config.setConnectionTimeout(getEnvLong("DB_CONN_TIMEOUT_MS", 5000));
-        config.setIdleTimeout(getEnvLong("DB_IDLE_TIMEOUT_MS", 300000));
-        config.setMaxLifetime(getEnvLong("DB_MAX_LIFETIME_MS", 1800000));
-        config.setValidationTimeout(getEnvLong("DB_VALIDATION_TIMEOUT_MS", 3000));
-        long leak = getEnvLong("DB_LEAK_DETECTION_MS", 20000);
+        config.setMinimumIdle(com.timeline.util.EnvUtil.getEnvInt("DB_POOL_MIN", 1));
+        config.setMaximumPoolSize(com.timeline.util.EnvUtil.getEnvInt("DB_POOL_MAX", 6));
+        config.setConnectionTimeout(com.timeline.util.EnvUtil.getEnvLong("DB_CONN_TIMEOUT_MS", 5000));
+        config.setIdleTimeout(com.timeline.util.EnvUtil.getEnvLong("DB_IDLE_TIMEOUT_MS", 300000));
+        config.setMaxLifetime(com.timeline.util.EnvUtil.getEnvLong("DB_MAX_LIFETIME_MS", 1800000));
+        config.setValidationTimeout(com.timeline.util.EnvUtil.getEnvLong("DB_VALIDATION_TIMEOUT_MS", 3000));
+        long leak = com.timeline.util.EnvUtil.getEnvLong("DB_LEAK_DETECTION_MS", 20000);
         if (leak > 0) config.setLeakDetectionThreshold(leak);
         config.setConnectionTestQuery("SELECT 1");
         config.setPoolName("timeline-pool");
         dataSource = new HikariDataSource(config);
         try (Connection conn = dataSource.getConnection(); Statement st = conn.createStatement()) {
             boolean isMemory = jdbcUrl.contains("mode=memory") || jdbcUrl.contains(":memory:");
-            st.execute("PRAGMA busy_timeout=5000");
+            st.execute("PRAGMA busy_timeout=" + com.timeline.util.EnvUtil.getEnvLong("DB_BUSY_TIMEOUT_MS", 5000));
             st.execute("PRAGMA foreign_keys=ON");
             if (!isMemory) {
                 try { st.execute("PRAGMA journal_mode=WAL"); } catch (SQLException ignored) {}
@@ -81,23 +81,5 @@ public class Database {
         if (dataSource != null) dataSource.close();
     }
 
-    private int getEnvInt(String name, int def) {
-        try {
-            String v = System.getenv(name);
-            if (v == null || v.isBlank()) return def;
-            return Integer.parseInt(v.trim());
-        } catch (Exception e) {
-            return def;
-        }
-    }
-
-    private long getEnvLong(String name, long def) {
-        try {
-            String v = System.getenv(name);
-            if (v == null || v.isBlank()) return def;
-            return Long.parseLong(v.trim());
-        } catch (Exception e) {
-            return def;
-        }
-    }
+    
 }

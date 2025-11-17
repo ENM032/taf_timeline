@@ -66,7 +66,7 @@ public class FactController {
             String category = ctx.queryParam("category");
             String q = ctx.queryParam("q");
             int page = ctx.queryParam("page") != null ? Math.max(0, parseInt(ctx.queryParam("page"), "page")) : 0;
-            int size = ctx.queryParam("size") != null ? Math.min(100, Math.max(1, parseInt(ctx.queryParam("size"), "size"))) : 20;
+            int size = ctx.queryParam("size") != null ? Math.min(com.timeline.util.AppConstants.MAX_PAGE_SIZE, Math.max(1, parseInt(ctx.queryParam("size"), "size"))) : com.timeline.util.AppConstants.DEFAULT_PAGE_SIZE;
             String sort = ctx.queryParam("sort");
             String sortField = "event_date";
             boolean asc = true;
