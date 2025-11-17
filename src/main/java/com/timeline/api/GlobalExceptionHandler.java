@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
     private static void write(Context ctx, int status, String error, String message, Map<String, String> details, String code, String type) {
         String reqId = ctx.attribute(REQ_ID_ATTR);
         ErrorResponse body = new ErrorResponse(OffsetDateTime.now(ZoneOffset.UTC), status, error, message, ctx.path(), reqId, code, type, details);
-        ctx.status(status).json(body);
+        com.timeline.http.GzipJson.write(ctx, status, body);
     }
 
     private static class Holder {

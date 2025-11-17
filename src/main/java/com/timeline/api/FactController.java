@@ -29,7 +29,7 @@ public class FactController {
             if (month < 1 || month > 12) throw new BadRequestResponse("month must be 1-12");
             YearMonth ym = YearMonth.of(year, month);
             List<Fact> list = repo.getByMonth(ym);
-            ctx.json(list);
+            com.timeline.http.GzipJson.write(ctx, 200, list);
         });
 
         app.get("/api/facts/on", ctx -> {
@@ -41,7 +41,7 @@ public class FactController {
             } catch (Exception e) {
                 throw new BadRequestResponse("date must be YYYY-MM-DD");
             }
-            ctx.json(repo.getByDate(date));
+            com.timeline.http.GzipJson.write(ctx, 200, repo.getByDate(date));
         });
 
         app.get("/api/facts/random", ctx -> {
@@ -53,7 +53,7 @@ public class FactController {
             if (month < 1 || month > 12) throw new BadRequestResponse("month must be 1-12");
             YearMonth ym = YearMonth.of(year, month);
             Fact f = repo.getRandom(ym).orElseThrow(() -> new NotFoundResponse("not found"));
-            ctx.json(f);
+            com.timeline.http.GzipJson.write(ctx, 200, f);
         });
 
         app.get("/api/facts/search", ctx -> {
@@ -73,13 +73,13 @@ public class FactController {
                 if (parts.length > 1) asc = !parts[1].equalsIgnoreCase("desc");
             }
             int offset = page * size;
-            ctx.json(repo.search(year, month, category, q, offset, size, sortField, asc));
+            com.timeline.http.GzipJson.write(ctx, 200, repo.search(year, month, category, q, offset, size, sortField, asc));
         });
 
         app.get("/api/facts/{id}", ctx -> {
             long id = Long.parseLong(ctx.pathParam("id"));
             Fact f = repo.getById(id).orElseThrow(() -> new NotFoundResponse("not found"));
-            ctx.json(f);
+            com.timeline.http.GzipJson.write(ctx, 200, f);
         });
 
         app.post("/api/facts", ctx -> {
@@ -104,7 +104,7 @@ public class FactController {
             f.setCategory(req.category());
             f.setSourceUrl(req.sourceUrl());
             Fact saved = repo.add(f);
-            ctx.status(201).json(saved);
+            com.timeline.http.GzipJson.write(ctx, 201, saved);
         });
 
         app.put("/api/facts/{id}", ctx -> {
@@ -132,7 +132,7 @@ public class FactController {
             f.setSourceUrl(req.sourceUrl());
             boolean ok = repo.update(id, f);
             if (!ok) throw new NotFoundResponse("not found");
-            ctx.json(repo.getById(id).orElseThrow(() -> new NotFoundResponse("not found")));
+            com.timeline.http.GzipJson.write(ctx, 200, repo.getById(id).orElseThrow(() -> new NotFoundResponse("not found")));
         });
 
         app.delete("/api/facts/{id}", ctx -> {

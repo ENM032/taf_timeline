@@ -32,12 +32,12 @@ public class App {
         });
         GlobalExceptionHandler.register(app);
         new FactController(repo).register(app);
-        app.get("/health", ctx -> ctx.json(new Status("ok")));
+        app.get("/health", ctx -> com.timeline.http.GzipJson.write(ctx, 200, new Status("ok")));
         app.get("/ready", ctx -> {
             try (java.sql.Connection c = database.getDataSource().getConnection(); java.sql.Statement s = c.createStatement()) {
-                try (java.sql.ResultSet r = s.executeQuery("SELECT 1")) { ctx.json(new Status("ready")); }
+                try (java.sql.ResultSet r = s.executeQuery("SELECT 1")) { com.timeline.http.GzipJson.write(ctx, 200, new Status("ready")); }
             } catch (Exception e) {
-                ctx.status(503).json(new Status("not-ready"));
+                com.timeline.http.GzipJson.write(ctx, 503, new Status("not-ready"));
             }
         });
         app.events(event -> event.serverStopped(() -> database.close()));
