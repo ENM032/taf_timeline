@@ -47,6 +47,26 @@
     - `FACT_SUMMARY_MAX` — max summary length (default 2000)
     - `FACT_CATEGORIES` — comma-separated allowlist (default `history,science,tech,culture,current`)
 
+## Usage Examples
+- PowerShell environment setup (example):
+  - `$env:PORT = "9090"`
+  - `$env:DB_URL = "jdbc:sqlite:var/db/timeline.db"`
+  - `$env:DB_POOL_MAX = "8"`
+  - `$env:REQUEST_MAX_BYTES = "1048576"`
+  - `$env:GZIP_MIN_BYTES = "1024"`
+  - `$env:RATE_LIMIT_PER_MIN = "240"`
+- Build and run:
+  - `mvn -q -DskipTests package`
+  - `java -jar target\taf-timeline-0.1.0.jar`
+- Quick checks:
+  - Health: `Invoke-RestMethod -UseBasicParsing http://localhost:9090/health | ConvertTo-Json`
+  - Readiness: `Invoke-RestMethod -UseBasicParsing http://localhost:9090/ready | ConvertTo-Json`
+  - Month facts: `Invoke-RestMethod -UseBasicParsing 'http://localhost:9090/api/facts?year=2024&month=1' | ConvertTo-Json`
+  - Gzip header check: `curl -H "Accept-Encoding: gzip" -I http://localhost:9090/api/facts?year=2024&month=1`
+  - Create fact:
+    - `$b = @{ eventDate='2024-01-15'; title='A neat January fact'; summary='Something cool in Jan 2024'; category='current'; sourceUrl='https://example.com' } | ConvertTo-Json`
+    - `Invoke-RestMethod -UseBasicParsing http://localhost:9090/api/facts -Method Post -ContentType 'application/json' -Body $b | ConvertTo-Json`
+
 ## Error Handling Design
 - Centralized in `GlobalExceptionHandler`
 - Adds request correlation id; writes JSON error response with fields:
