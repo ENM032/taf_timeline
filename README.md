@@ -39,7 +39,6 @@ Errors return JSON with: `timestamp`, `status`, `error`, `message`, `path`, `req
 - Detailed docs are in `docs/`:
   - Developers: `docs/DeveloperGuide.md`
   - Users: `docs/UserGuide.md`
-- On your machine these are under: `/c:/Users/Zozz/Documents/trae_projects/TaF_Timeline/docs/` (e.g., `/c:/Users/Zozz/Documents/trae_projects/TaF_Timeline/docs/DeveloperGuide.md`).
 
 ## Disclaimer
 This project uses AI-generated documentation, commit messages, and pull requests.

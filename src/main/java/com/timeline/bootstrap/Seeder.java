@@ -36,7 +36,7 @@ public class Seeder {
     }
 
     private static void addIfMissing(FactRepository repo, Fact f) {
-        boolean exists = repo.getByDate(f.getEventDate()).stream().anyMatch(x -> x.getTitle().equalsIgnoreCase(f.getTitle()));
+        boolean exists = repo.existsByDateAndTitle(f.getEventDate(), f.getTitle());
         if (!exists) repo.add(f);
     }
 

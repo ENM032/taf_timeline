@@ -24,6 +24,14 @@ public class Database {
         config.setPoolName("timeline-pool");
         dataSource = new HikariDataSource(config);
         try (Connection conn = dataSource.getConnection(); Statement st = conn.createStatement()) {
+            boolean isMemory = jdbcUrl.contains("mode=memory") || jdbcUrl.contains(":memory:");
+            st.execute("PRAGMA busy_timeout=5000");
+            st.execute("PRAGMA foreign_keys=ON");
+            if (!isMemory) {
+                try { st.execute("PRAGMA journal_mode=WAL"); } catch (SQLException ignored) {}
+                try { st.execute("PRAGMA synchronous=NORMAL"); } catch (SQLException ignored) {}
+                try { st.execute("PRAGMA cache_size=-20000"); } catch (SQLException ignored) {}
+            }
             st.executeUpdate("CREATE TABLE IF NOT EXISTS facts (" +
                     "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                     "event_date TEXT NOT NULL," +
@@ -36,6 +44,12 @@ public class Database {
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_facts_event_date ON facts(event_date)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_facts_category ON facts(category)");
             st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_facts_created_at ON facts(created_at)");
+            st.executeUpdate("CREATE INDEX IF NOT EXISTS idx_facts_event_date_title ON facts(event_date, title)");
+
+            st.executeUpdate("CREATE VIRTUAL TABLE IF NOT EXISTS facts_fts USING fts5(title, summary, content='facts', content_rowid='id')");
+            st.executeUpdate("CREATE TRIGGER IF NOT EXISTS facts_ai AFTER INSERT ON facts BEGIN INSERT INTO facts_fts(rowid, title, summary) VALUES (new.id, new.title, new.summary); END");
+            st.executeUpdate("CREATE TRIGGER IF NOT EXISTS facts_au AFTER UPDATE ON facts BEGIN UPDATE facts_fts SET title=new.title, summary=new.summary WHERE rowid=new.id; END");
+            st.executeUpdate("CREATE TRIGGER IF NOT EXISTS facts_ad AFTER DELETE ON facts BEGIN DELETE FROM facts_fts WHERE rowid=old.id; END");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

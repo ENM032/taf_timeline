@@ -93,18 +93,40 @@ public class SqliteFactRepository implements FactRepository {
 
     @Override
     public Optional<Fact> getRandom(YearMonth ym) {
-        String sql = "SELECT id, event_date, title, summary, category, source_url, created_at FROM facts WHERE event_date BETWEEN ? AND ? ORDER BY RANDOM() LIMIT 1";
         LocalDate start = ym.atDay(1);
         LocalDate end = ym.atEndOfMonth();
-        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, start.toString());
-            ps.setString(2, end.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return Optional.of(map(rs));
-                return Optional.empty();
+        try (Connection conn = dataSource.getConnection()) {
+            try (PreparedStatement cnt = conn.prepareStatement("SELECT COUNT(1) FROM facts WHERE event_date BETWEEN ? AND ?")) {
+                cnt.setString(1, start.toString());
+                cnt.setString(2, end.toString());
+                int count = 0;
+                try (ResultSet rs = cnt.executeQuery()) { if (rs.next()) count = rs.getInt(1); }
+                if (count == 0) return Optional.empty();
+                int offset = Math.abs(new java.util.Random().nextInt()) % count;
+                try (PreparedStatement ps = conn.prepareStatement("SELECT id, event_date, title, summary, category, source_url, created_at FROM facts WHERE event_date BETWEEN ? AND ? LIMIT 1 OFFSET ?")) {
+                    ps.setString(1, start.toString());
+                    ps.setString(2, end.toString());
+                    ps.setInt(3, offset);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) return Optional.of(map(rs));
+                        return Optional.empty();
+                    }
+                }
             }
         } catch (SQLException e) {
             throw new DataAccessException("random failed", e);
+        }
+    }
+
+    @Override
+    public boolean existsByDateAndTitle(LocalDate date, String title) {
+        String sql = "SELECT 1 FROM facts WHERE event_date=? AND title=? LIMIT 1";
+        try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, date.toString());
+            ps.setString(2, title);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next(); }
+        } catch (SQLException e) {
+            throw new DataAccessException("exists by date/title failed", e);
         }
     }
 
@@ -137,29 +159,34 @@ public class SqliteFactRepository implements FactRepository {
 
     @Override
     public List<Fact> search(Integer year, Integer month, String category, String q, int offset, int limit, String sortField, boolean asc) {
-        StringBuilder sb = new StringBuilder("SELECT id, event_date, title, summary, category, source_url, created_at FROM facts WHERE 1=1");
+        boolean useFts = q != null && !q.isBlank();
+        StringBuilder sb = new StringBuilder();
+        if (useFts) {
+            sb.append("SELECT f.id, f.event_date, f.title, f.summary, f.category, f.source_url, f.created_at FROM facts f JOIN facts_fts fts ON fts.rowid = f.id WHERE fts MATCH ?");
+        } else {
+            sb.append("SELECT id, event_date, title, summary, category, source_url, created_at FROM facts WHERE 1=1");
+        }
         List<Object> params = new ArrayList<>();
+        if (useFts) {
+            params.add(q);
+        }
         if (year != null && month != null) {
             YearMonth ym = YearMonth.of(year, month);
-            sb.append(" AND event_date BETWEEN ? AND ?");
+            sb.append(useFts ? " AND f.event_date BETWEEN ? AND ?" : " AND event_date BETWEEN ? AND ?");
             params.add(ym.atDay(1).toString());
             params.add(ym.atEndOfMonth().toString());
         } else if (year != null) {
-            sb.append(" AND substr(event_date,1,4) = ?");
-            params.add(String.format("%04d", year));
+            String y = String.format("%04d", year);
+            sb.append(useFts ? " AND f.event_date BETWEEN ? AND ?" : " AND event_date BETWEEN ? AND ?");
+            params.add(y + "-01-01");
+            params.add(y + "-12-31");
         }
         if (category != null && !category.isBlank()) {
-            sb.append(" AND category = ?");
+            sb.append(useFts ? " AND f.category = ?" : " AND category = ?");
             params.add(category);
         }
-        if (q != null && !q.isBlank()) {
-            String like = q.replace("%", "\\%").replace("_", "\\_");
-            sb.append(" AND (title LIKE ? ESCAPE '\\' OR summary LIKE ? ESCAPE '\\')");
-            params.add("%" + like + "%");
-            params.add("%" + like + "%");
-        }
         String sf = (sortField != null && ("event_date".equalsIgnoreCase(sortField) || "created_at".equalsIgnoreCase(sortField) || "title".equalsIgnoreCase(sortField))) ? sortField : "event_date";
-        sb.append(" ORDER BY ").append(sf).append(asc ? " ASC" : " DESC");
+        sb.append(" ORDER BY ").append(useFts ? ("f." + sf) : sf).append(asc ? " ASC" : " DESC");
         sb.append(" LIMIT ? OFFSET ?");
         try (Connection conn = dataSource.getConnection(); PreparedStatement ps = conn.prepareStatement(sb.toString())) {
             int idx = 1;

@@ -7,6 +7,7 @@ import com.timeline.bootstrap.Seeder;
 import com.timeline.model.Fact;
 import com.timeline.repository.FactRepository;
 import com.timeline.repository.SqliteFactRepository;
+import com.timeline.repository.CachingFactRepository;
 import io.javalin.Javalin;
 import io.javalin.json.JavalinJackson;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +21,7 @@ public class App {
     public static void main(String[] args) {
         Database database = new Database("jdbc:sqlite:var/db/timeline.db");
         database.init();
-        FactRepository repo = new SqliteFactRepository(database);
+        FactRepository repo = new CachingFactRepository(new SqliteFactRepository(database));
         Seeder.seedIfEmpty(repo);
         ObjectMapper om = new ObjectMapper();
         om.registerModule(new JavaTimeModule());
