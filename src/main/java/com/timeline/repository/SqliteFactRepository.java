@@ -168,7 +168,7 @@ public class SqliteFactRepository implements FactRepository {
         }
         List<Object> params = new ArrayList<>();
         if (useFts) {
-            params.add(q);
+            params.add(sanitizeFts(q));
         }
         if (year != null && month != null) {
             YearMonth ym = YearMonth.of(year, month);
@@ -203,6 +203,18 @@ public class SqliteFactRepository implements FactRepository {
         } catch (SQLException e) {
             throw new DataAccessException("search failed", e);
         }
+    }
+
+    private String sanitizeFts(String q) {
+        String[] tokens = q.trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < tokens.length; i++) {
+            String t = tokens[i].replace("\"", "");
+            if (t.isBlank()) continue;
+            if (sb.length() > 0) sb.append(" AND ");
+            sb.append('"').append(t).append('"');
+        }
+        return sb.length() == 0 ? q : sb.toString();
     }
     @Override
     public long count() {

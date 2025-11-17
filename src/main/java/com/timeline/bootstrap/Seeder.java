@@ -49,8 +49,8 @@ public class Seeder {
             boolean headerSkipped = false;
             while ((line = reader.readLine()) != null) {
                 if (!headerSkipped) { headerSkipped = true; continue; }
-                String[] parts = line.split(",");
-                if (parts.length < 5) continue;
+                String[] parts = parseCsvLine(line);
+                if (parts == null || parts.length < 5) continue;
                 String date = parts[0].trim();
                 String title = parts[1].trim();
                 String summary = parts[2].trim();
@@ -62,5 +62,24 @@ public class Seeder {
         } catch (Exception e) {
             // swallow errors to avoid startup failure
         }
+    }
+
+    private static String[] parseCsvLine(String line) {
+        java.util.List<String> fields = new java.util.ArrayList<>();
+        StringBuilder sb = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                fields.add(sb.toString());
+                sb.setLength(0);
+            } else {
+                sb.append(c);
+            }
+        }
+        fields.add(sb.toString());
+        return fields.toArray(new String[0]);
     }
 }

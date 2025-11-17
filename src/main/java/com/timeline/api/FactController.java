@@ -3,6 +3,7 @@ package com.timeline.api;
 import com.timeline.api.dto.FactRequest;
 import com.timeline.api.error.ValidationException;
 import com.timeline.model.Fact;
+import com.timeline.service.FactService;
 import com.timeline.repository.FactRepository;
 import io.javalin.Javalin;
 import io.javalin.http.BadRequestResponse;
@@ -14,9 +15,11 @@ import java.util.List;
 
 public class FactController {
     private final FactRepository repo;
+    private final FactService service;
 
     public FactController(FactRepository repo) {
         this.repo = repo;
+        this.service = new FactService(repo);
     }
 
     public void register(Javalin app) {
@@ -28,7 +31,7 @@ public class FactController {
             int month = parseInt(monthStr, "month");
             if (month < 1 || month > 12) throw new BadRequestResponse("month must be 1-12");
             YearMonth ym = YearMonth.of(year, month);
-            List<Fact> list = repo.getByMonth(ym);
+            List<Fact> list = service.month(ym);
             com.timeline.http.GzipJson.write(ctx, 200, list);
         });
 
@@ -41,7 +44,7 @@ public class FactController {
             } catch (Exception e) {
                 throw new BadRequestResponse("date must be YYYY-MM-DD");
             }
-            com.timeline.http.GzipJson.write(ctx, 200, repo.getByDate(date));
+            com.timeline.http.GzipJson.write(ctx, 200, service.day(date));
         });
 
         app.get("/api/facts/random", ctx -> {
@@ -73,7 +76,7 @@ public class FactController {
                 if (parts.length > 1) asc = !parts[1].equalsIgnoreCase("desc");
             }
             int offset = page * size;
-            com.timeline.http.GzipJson.write(ctx, 200, repo.search(year, month, category, q, offset, size, sortField, asc));
+            com.timeline.http.GzipJson.write(ctx, 200, service.search(year, month, category, q, offset, size, sortField, asc));
         });
 
         app.get("/api/facts/{id}", ctx -> {
@@ -84,26 +87,11 @@ public class FactController {
 
         app.post("/api/facts", ctx -> {
             FactRequest req = ctx.bodyAsClass(FactRequest.class);
-            java.util.Map<String,String> errors = new java.util.LinkedHashMap<>();
-            if (req.title() == null || req.title().isBlank()) errors.put("title", "required");
-            if (req.summary() == null || req.summary().isBlank()) errors.put("summary", "required");
-            if (req.eventDate() == null || req.eventDate().isBlank()) errors.put("eventDate", "required");
+            java.util.Map<String,String> errors = service.validate(req.eventDate(), req.title(), req.summary(), req.category(), req.sourceUrl());
             LocalDate date = null;
-            if (!errors.containsKey("eventDate")) {
-                try {
-                    date = LocalDate.parse(req.eventDate());
-                } catch (Exception e) {
-                    errors.put("eventDate", "must be YYYY-MM-DD");
-                }
-            }
+            if (!errors.containsKey("eventDate")) date = LocalDate.parse(req.eventDate());
             if (!errors.isEmpty()) throw new ValidationException("Validation failed", errors);
-            Fact f = new Fact();
-            f.setEventDate(date);
-            f.setTitle(req.title());
-            f.setSummary(req.summary());
-            f.setCategory(req.category());
-            f.setSourceUrl(req.sourceUrl());
-            Fact saved = repo.add(f);
+            Fact saved = service.create(date, req.title(), req.summary(), req.category(), req.sourceUrl());
             com.timeline.http.GzipJson.write(ctx, 201, saved);
         });
 
@@ -111,26 +99,11 @@ public class FactController {
             long id = Long.parseLong(ctx.pathParam("id"));
             if (repo.getById(id).isEmpty()) throw new NotFoundResponse("not found");
             FactRequest req = ctx.bodyAsClass(FactRequest.class);
-            java.util.Map<String,String> errors = new java.util.LinkedHashMap<>();
-            if (req.title() == null || req.title().isBlank()) errors.put("title", "required");
-            if (req.summary() == null || req.summary().isBlank()) errors.put("summary", "required");
-            if (req.eventDate() == null || req.eventDate().isBlank()) errors.put("eventDate", "required");
+            java.util.Map<String,String> errors = service.validate(req.eventDate(), req.title(), req.summary(), req.category(), req.sourceUrl());
             LocalDate date = null;
-            if (!errors.containsKey("eventDate")) {
-                try {
-                    date = LocalDate.parse(req.eventDate());
-                } catch (Exception e) {
-                    errors.put("eventDate", "must be YYYY-MM-DD");
-                }
-            }
+            if (!errors.containsKey("eventDate")) date = LocalDate.parse(req.eventDate());
             if (!errors.isEmpty()) throw new ValidationException("Validation failed", errors);
-            Fact f = new Fact();
-            f.setEventDate(date);
-            f.setTitle(req.title());
-            f.setSummary(req.summary());
-            f.setCategory(req.category());
-            f.setSourceUrl(req.sourceUrl());
-            boolean ok = repo.update(id, f);
+            boolean ok = service.update(id, date, req.title(), req.summary(), req.category(), req.sourceUrl());
             if (!ok) throw new NotFoundResponse("not found");
             com.timeline.http.GzipJson.write(ctx, 200, repo.getById(id).orElseThrow(() -> new NotFoundResponse("not found")));
         });
