@@ -99,6 +99,12 @@ curl:
 - `curl "http://localhost:8080/api/facts?year=2024&month=1"`
 - `curl -X POST http://localhost:8080/api/facts -H "Content-Type: application/json" -d '{"eventDate":"2024-01-15","title":"A neat January fact","summary":"Something cool in Jan 2024","category":"current","sourceUrl":"https://example.com"}'`
 
+### More Examples
+- Readiness: `curl http://localhost:8080/ready`
+- Random fact in month: `curl "http://localhost:8080/api/facts/random?year=2024&month=1"`
+- Search with pagination: `curl "http://localhost:8080/api/facts/search?year=2024&month=1&q=mars&page=0&size=10&sort=event_date,asc"`
+- Gzip header check: `curl -H "Accept-Encoding: gzip" -I "http://localhost:8080/api/facts?year=2024&month=1"`
+
 ## Data Model
 Table `facts`:
 - `id` INTEGER PRIMARY KEY AUTOINCREMENT
