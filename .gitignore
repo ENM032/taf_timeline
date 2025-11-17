@@ -1,0 +1,28 @@
+# Build outputs
+target/
+build/
+out/
+
+# IDE and tooling
+.idea/
+.vscode/
+*.iml
+.gradle/
+
+# Trae workspace
+.trae/
+
+# Local databases and runtime artifacts
+data/*.db
+data/*.sqlite
+*.db
+*.sqlite
+var/db/
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Maven wrapper jar (if added later)
+.mvn/wrapper/maven-wrapper.jar
